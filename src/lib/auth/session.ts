@@ -1,5 +1,3 @@
-import { eq } from "drizzle-orm";
-
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
