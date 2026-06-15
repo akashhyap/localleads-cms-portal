@@ -1,0 +1,80 @@
+# .github/workflows/deploy.yml
+#
+# Reference Cloudways deploy workflow for a Portal-managed Astro site.
+#
+# Why this shape: Cloudways cannot run build commands, so we build here and
+# publish the built output to a dedicated `deploy` branch. Content (and
+# portal.yml) live on `main`; build artifacts live on `deploy`. Keeping them on
+# separate branches means the Portal's optimistic-concurrency checks on content
+# writes never collide with the bot's build commits.
+#
+# Cloudways is then pointed at the `deploy` branch and pulls it after each build.
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   CLOUDWAYS_EMAIL        Cloudways account email
+#   CLOUDWAYS_API_KEY      Cloudways API key
+#   CLOUDWAYS_SERVER_ID    Target server id
+#   CLOUDWAYS_APP_ID       Target application id
+
+name: Build and deploy (Cloudways)
+
+on:
+  push:
+    branches: [main] # content branch the Portal commits to
+  workflow_dispatch: {} # manual re-publish from the Portal
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write # push to the deploy branch
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout content
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build # astro build -> ./dist
+
+      - name: Publish built site to deploy branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: deploy
+          # Built output only; keep history shallow.
+          force_orphan: true
+          commit_message: "build: ${{ github.sha }}"
+
+      - name: Trigger Cloudways Git pull
+        env:
+          CW_EMAIL: ${{ secrets.CLOUDWAYS_EMAIL }}
+          CW_API_KEY: ${{ secrets.CLOUDWAYS_API_KEY }}
+          CW_SERVER_ID: ${{ secrets.CLOUDWAYS_SERVER_ID }}
+          CW_APP_ID: ${{ secrets.CLOUDWAYS_APP_ID }}
+        run: |
+          set -euo pipefail
+          # 1) Exchange email + API key for a short-lived OAuth token.
+          TOKEN=$(curl -s -X POST https://api.cloudways.com/api/v1/oauth/access_token \
+            -d "email=${CW_EMAIL}" -d "api_key=${CW_API_KEY}" | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
+          if [ -z "${TOKEN}" ]; then echo "Cloudways auth failed"; exit 1; fi
+          # 2) Trigger a Git pull of the deploy branch on the application.
+          curl -s -X POST https://api.cloudways.com/api/v1/git/pull \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -d "server_id=${CW_SERVER_ID}" \
+            -d "app_id=${CW_APP_ID}" \
+            -d "branch_name=deploy"
+          echo "Cloudways pull triggered."
