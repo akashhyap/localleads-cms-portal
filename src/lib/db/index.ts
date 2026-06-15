@@ -16,7 +16,9 @@ const globalForDb = globalThis as unknown as {
   __portalSql?: ReturnType<typeof postgres>;
 };
 
-function createClient() {
+type DrizzleClient = ReturnType<typeof drizzle<typeof schema>>;
+
+function createClient(): DrizzleClient {
   const env = getEnv();
   const sql =
     globalForDb.__portalSql ??
@@ -29,6 +31,18 @@ function createClient() {
   return drizzle(sql, { schema });
 }
 
-export const db = createClient();
+/**
+ * Lazily-initialised Drizzle client. The connection (and env validation) is
+ * deferred until the first query, so importing modules that merely reference
+ * `db` doesn't require a configured environment (keeps unit tests import-safe).
+ */
+let instance: DrizzleClient | null = null;
+export const db = new Proxy({} as DrizzleClient, {
+  get(_target, prop, receiver) {
+    instance ??= createClient();
+    return Reflect.get(instance, prop, receiver);
+  },
+}) as DrizzleClient;
+
 export { schema };
-export type Database = typeof db;
+export type Database = DrizzleClient;
