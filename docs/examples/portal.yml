@@ -1,0 +1,118 @@
+# portal.yml — Portal content schema
+#
+# Declares everything the Portal is allowed to edit in this site repo. Baked
+# into our Astro starter so every new site is portal-ready at birth. The Portal
+# reads this file fresh from GitHub; it is the source of truth for "what is
+# editable", never the Portal database.
+#
+# This example models a typical ~30-page local-business Astro site:
+#   - a Homepage singleton
+#   - a Services collection
+#   - a Locations collection
+#   - a Contact-info singleton
+version: 1
+
+# Where uploaded images/logos are committed, and the public path Astro serves
+# them from. Editors never see these paths — the media picker handles it.
+media:
+  input: src/assets/uploads        # committed into the repo here
+  output: /uploads                 # referenced in content as /uploads/<file>
+  extensions: [jpg, jpeg, png, webp, svg, avif]
+  maxSize: 4MB                      # enforced before commit
+
+content:
+  # ---- Homepage (singleton: one file, edit only) ------------------------
+  - name: homepage
+    label: Homepage
+    type: singleton
+    path: src/content/pages/home.md
+    format: md
+    # operations omitted -> singleton default: edit only (no create/delete/rename)
+    fields:
+      - { name: title, label: Page title, type: string, required: true,
+          help: Shown in the browser tab and search results. }
+      - { name: hero_heading, label: Hero heading, type: string, required: true }
+      - { name: hero_subheading, label: Hero subheading, type: text }
+      - { name: hero_image, label: Hero image, type: image,
+          help: Recommended 1600x900. Max 4MB. }
+      - { name: phone, label: Phone number, type: string }
+      - { name: show_reviews, label: Show reviews section, type: boolean, default: true }
+      - { name: body, label: Main content, type: rich-text }
+
+  # ---- Services (collection) --------------------------------------------
+  - name: services
+    label: Services
+    type: collection
+    path: src/content/services
+    filename: "{slug}.md"
+    format: md
+    titleField: name
+    # Clients may add/edit services but not delete or rename files. Staff can
+    # do everything regardless (role overrides this ceiling upward only to the
+    # ceiling, never past it).
+    operations: { create: true, edit: true, delete: false, rename: false }
+    fields:
+      - { name: name, label: Service name, type: string, required: true }
+      - { name: slug, label: URL slug, type: string, required: true,
+          help: Lowercase, no spaces. Used in the page URL. }
+      - { name: icon, label: Icon, type: image }
+      - { name: summary, label: Short summary, type: text,
+          help: One or two sentences shown on the services overview. }
+      - { name: order, label: Sort order, type: number, default: 0 }
+      - { name: body, label: Full description, type: rich-text }
+      - name: faqs
+        label: FAQs
+        type: list
+        help: Common questions shown at the bottom of the service page.
+        fields:
+          - { name: question, label: Question, type: string }
+          - { name: answer, label: Answer, type: text }
+
+  # ---- Locations (collection) -------------------------------------------
+  - name: locations
+    label: Locations
+    type: collection
+    path: src/content/locations
+    filename: "{slug}.md"
+    format: md
+    titleField: city
+    operations: { create: true, edit: true, delete: false, rename: false }
+    fields:
+      - { name: city, label: City / area served, type: string, required: true }
+      - { name: slug, label: URL slug, type: string, required: true }
+      - { name: address, label: Street address, type: text }
+      - { name: phone, label: Local phone, type: string }
+      - name: hours
+        label: Opening hours
+        type: object
+        fields:
+          - { name: weekdays, label: Mon–Fri, type: string, default: "8am – 6pm" }
+          - { name: saturday, label: Saturday, type: string }
+          - { name: sunday, label: Sunday, type: string, default: "Closed" }
+      - { name: map_embed, label: Google Maps embed URL, type: string }
+      - { name: body, label: About this location, type: rich-text }
+
+  # ---- Contact info (singleton, structured data file) -------------------
+  - name: contact
+    label: Contact details
+    type: singleton
+    path: src/content/settings/contact.json
+    format: json
+    fields:
+      - { name: business_name, label: Business name, type: string, required: true }
+      - { name: logo, label: Logo, type: image }
+      - { name: email, label: Email, type: string }
+      - { name: phone, label: Phone, type: string }
+      - { name: emergency_phone, label: Emergency phone, type: string }
+      - name: social
+        label: Social links
+        type: object
+        fields:
+          - { name: facebook, label: Facebook URL, type: string }
+          - { name: instagram, label: Instagram URL, type: string }
+          - { name: google, label: Google Business URL, type: string }
+      - name: service_area
+        label: Service area (zip codes)
+        type: list
+        fields:
+          - { name: zip, label: ZIP code, type: string }
