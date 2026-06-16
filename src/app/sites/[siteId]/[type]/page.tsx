@@ -25,7 +25,7 @@ export default function ContentTypePage({
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/sites/${siteId}/${type}`);
+    const res = await fetch(`/api/sites/${siteId}/content/${type}`);
     const data = await res.json();
     setLoading(false);
     if (!res.ok) {
@@ -94,7 +94,7 @@ function SingletonEditor({ siteId, type, def, canEdit }: { siteId: string; type:
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    fetch(`/api/sites/${siteId}/${type}`)
+    fetch(`/api/sites/${siteId}/content/${type}`)
       .then((r) => r.json())
       .then((d) => {
         setValues({ ...emptyValues(def.fields), ...d.values });
@@ -105,7 +105,7 @@ function SingletonEditor({ siteId, type, def, canEdit }: { siteId: string; type:
   async function save() {
     setSaving(true);
     setMsg("");
-    const res = await fetch(`/api/sites/${siteId}/${type}`, {
+    const res = await fetch(`/api/sites/${siteId}/content/${type}`, {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ values, baseSha: sha }),
@@ -229,7 +229,7 @@ function ItemEditor({
 
   useEffect(() => {
     if (!entry) return;
-    fetch(`/api/sites/${siteId}/${type}/item?path=${encodeURIComponent(entry.path)}`)
+    fetch(`/api/sites/${siteId}/content/${type}/item?path=${encodeURIComponent(entry.path)}`)
       .then((r) => r.json())
       .then((d) => {
         setValues({ ...emptyValues(def.fields), ...d.values });
@@ -240,7 +240,7 @@ function ItemEditor({
   async function save() {
     setSaving(true);
     setMsg("");
-    const url = isNew ? `/api/sites/${siteId}/${type}` : `/api/sites/${siteId}/${type}/item`;
+    const url = isNew ? `/api/sites/${siteId}/content/${type}` : `/api/sites/${siteId}/content/${type}/item`;
     const res = await fetch(url, {
       method: isNew ? "POST" : "PUT",
       headers: { "content-type": "application/json" },
@@ -257,7 +257,7 @@ function ItemEditor({
 
   async function remove() {
     if (!entry || !confirm("Delete this item?")) return;
-    const res = await fetch(`/api/sites/${siteId}/${type}/item`, {
+    const res = await fetch(`/api/sites/${siteId}/content/${type}/item`, {
       method: "DELETE",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ path: entry.path, baseSha: sha }),
