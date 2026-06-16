@@ -24,55 +24,65 @@ export default async function SitePage({
   const isAgency = access.actor.kind === "agency";
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
-      <Link href="/dashboard" className="text-sm text-gray-500 hover:underline">
-        ← All sites
-      </Link>
-      <header className="mt-3 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{access.site.name}</h1>
-          <p className="text-sm text-gray-500">
-            {access.site.repoOwner}/{access.site.repoName}
-          </p>
+    <div className="flex min-h-screen flex-col">
+      <header className="border-b border-gray-200 bg-white">
+        <div className="mx-auto w-full max-w-4xl px-6 py-4">
+          <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-gray-500 transition hover:text-gray-900">
+            ← All sites
+          </Link>
+          <div className="mt-3 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-xl font-semibold tracking-tight">{access.site.name}</h1>
+              <p className="truncate text-sm text-gray-500">
+                {access.site.repoOwner}/{access.site.repoName}
+              </p>
+            </div>
+            {isAgency && (
+              <nav className="flex shrink-0 gap-1 text-sm">
+                {[
+                  { href: `/sites/${siteId}/invites`, label: "Invites" },
+                  { href: `/sites/${siteId}/audit`, label: "Audit log" },
+                  { href: `/sites/${siteId}/settings`, label: "Settings" },
+                ].map((l) => (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    className="rounded-lg px-3 py-1.5 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    {l.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
+          </div>
         </div>
-        {isAgency && (
-          <nav className="flex gap-3 text-sm">
-            <Link href={`/sites/${siteId}/invites`} className="text-gray-600 hover:underline">
-              Invites
-            </Link>
-            <Link href={`/sites/${siteId}/audit`} className="text-gray-600 hover:underline">
-              Audit log
-            </Link>
-            <Link href={`/sites/${siteId}/settings`} className="text-gray-600 hover:underline">
-              Settings
-            </Link>
-          </nav>
-        )}
       </header>
 
-      <PublishStatus siteId={siteId} />
+      <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-8">
+        <PublishStatus siteId={siteId} />
 
-      <section className="mt-8">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-gray-400">
-          Content
-        </h2>
-        <ul className="mt-3 divide-y divide-gray-100 rounded-xl border border-gray-200">
-          {schema.content.map((ct) => (
-            <li key={ct.name}>
-              <Link
-                href={`/sites/${siteId}/${ct.name}`}
-                className="flex items-center justify-between px-5 py-4 hover:bg-gray-50"
-              >
-                <span>
-                  <span className="font-medium">{ct.label}</span>
-                  <span className="ml-2 text-xs text-gray-400">{ct.type}</span>
-                </span>
-                <span className="text-gray-300">→</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </main>
+        <section className="mt-6">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400">Content</h2>
+          <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+            {schema.content.map((ct) => (
+              <li key={ct.name}>
+                <Link
+                  href={`/sites/${siteId}/${ct.name}`}
+                  className="group flex items-center justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-gray-900 hover:shadow-md"
+                >
+                  <span>
+                    <span className="block font-medium text-gray-900">{ct.label}</span>
+                    <span className="mt-0.5 inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                      {ct.type}
+                    </span>
+                  </span>
+                  <span className="text-gray-300 transition group-hover:translate-x-0.5 group-hover:text-gray-500">→</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </main>
+    </div>
   );
 }
